@@ -1,3 +1,5 @@
+/* Patched MAL functions. */
+
 function patched_anime_checkScoreEnter(e, id) {
     if ((window.event ? window.event.keyCode : e.which) == 13)
         patched_anime_updateScore(id);
@@ -19,6 +21,43 @@ function patched_anime_updateScore(entry_id) {
     payload[entry_id] = new_score_centigrade;
     chrome.storage.local.set(payload);
 }
+
+function patched_myinfo_addtolist(anime_id) {
+    var nscore_centigrade = document.getElementById("myinfo_score").value;
+    var nstatus = document.getElementById("myinfo_status").value;
+    var nepsseen = document.getElementById("myinfo_watchedeps").value;
+    var nscore = Math.round(nscore_centigrade / 10.);
+    var payload = {};
+
+    document.getElementById("myinfoDisplay").innerHTML = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
+    $.post("/includes/ajax.inc.php?t=61", {aid:anime_id,score:nscore,status:nstatus,epsseen:nepsseen}, function(data) {
+        document.getElementById("myinfoDisplay").innerHTML = '';
+        document.getElementById("addtolist").innerHTML = data;
+    });
+
+    payload[anime_id] = nscore_centigrade;
+    chrome.storage.local.set(payload);
+}
+
+function patched_myinfo_updateInfo(entry_id) {
+    var nscore_centigrade = document.getElementById("myinfo_score").value;
+    var nstatus = document.getElementById("myinfo_status").value;
+    var nepsseen = document.getElementById("myinfo_watchedeps").value;
+    var naid = document.getElementById("myinfo_anime_id").value;
+    var curstats = document.getElementById("myinfo_curstatus").value;
+    var nscore = Math.round(nscore_centigrade / 10.);
+    var payload = {};
+
+    document.getElementById("myinfoDisplay").innerHTML = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
+    $.post("/includes/ajax.inc.php?t=62", {aid:naid,alistid:entry_id,score:nscore,status:nstatus,epsseen:nepsseen,astatus:curstats}, function(data) {
+        document.getElementById("myinfoDisplay").innerHTML = data;
+    });
+
+    payload[entry_id] = nscore_centigrade;
+    chrome.storage.local.set(payload);
+}
+
+/* Extension hooks. */
 
 function hook_animelist() {
     // chrome.storage.local.clear();
@@ -59,8 +98,10 @@ function hook_animelist() {
 function hook_anime(aid) {
     chrome.storage.local.get(aid, function(data) {
         var old_input = $("#myinfo_score");
+        var old_add = $("input[name='myinfo_submit'][value='Add']");
+        var old_update = $("input[name='myinfo_submit'][value='Update']");
         var score;
-        if (aid in data) {
+        if (old_add.length == 0 && aid in data) {
             score = data[aid];
         }
         else {
@@ -74,6 +115,25 @@ function hook_anime(aid) {
         var new_input = $('<input type="text" id="myinfo_score" name="myinfo_score" class="inputtext" size="3" value="' + score + '"><span> / 100</span>');
         new_input.insertAfter(old_input);
         old_input.remove();
+        if (old_add.length > 0) {
+            var new_add = $('<input type="button" name="myinfo_submit" value="Add" class="inputButton">');
+            new_add.insertAfter(old_add);
+            old_add.remove();
+            new_add.click(function(tid) {
+                return function() {
+                    return patched_myinfo_addtolist(tid);
+                }
+            }(aid));
+        } else {
+            var new_update = $('<input type="button" name="myinfo_submit" value="Update" class="inputButton">');
+            new_update.insertAfter(old_update);
+            old_update.remove();
+            new_update.click(function(tid) {
+                return function() {
+                    return patched_myinfo_updateInfo(tid);
+                }
+            }(aid));
+        }
     });
 }
 
