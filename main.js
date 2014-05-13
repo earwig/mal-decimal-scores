@@ -8,25 +8,25 @@ function patched_anime_checkScoreEnter(e, id) {
 }
 
 function patched_anime_updateScore(entry_id) {
-    var new_score_centigrade = document.getElementById("scoretext" + entry_id).value;
-    var new_score = Math.round(new_score_centigrade / 10.);
+    var new_score_percent = document.getElementById("scoretext" + entry_id).value;
+    var new_score = Math.round(new_score_percent / 10.);
     var payload = {};
 
     $.post("/includes/ajax.inc.php?t=63", {id: entry_id, score: new_score}, function(data) {
-        document.getElementById("scoreval" + entry_id).innerHTML = new_score_centigrade;
+        document.getElementById("scoreval" + entry_id).innerHTML = new_score_percent;
         document.getElementById("scoretext" + entry_id).value = "";
         document.getElementById("scorediv" + entry_id).style.display = "none";
     });
 
-    payload[entry_id] = new_score_centigrade;
+    payload[entry_id] = new_score_percent;
     chrome.storage.local.set(payload);
 }
 
 function patched_myinfo_addtolist(anime_id) {
-    var nscore_centigrade = document.getElementById("myinfo_score").value;
+    var nscore_percent = document.getElementById("myinfo_score").value;
     var nstatus = document.getElementById("myinfo_status").value;
     var nepsseen = document.getElementById("myinfo_watchedeps").value;
-    var nscore = Math.round(nscore_centigrade / 10.);
+    var nscore = Math.round(nscore_percent / 10.);
     var payload = {};
 
     document.getElementById("myinfoDisplay").innerHTML = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
@@ -35,17 +35,17 @@ function patched_myinfo_addtolist(anime_id) {
         document.getElementById("addtolist").innerHTML = data;
     });
 
-    payload[anime_id] = nscore_centigrade;
+    payload[anime_id] = nscore_percent;
     chrome.storage.local.set(payload);
 }
 
 function patched_myinfo_updateInfo(entry_id) {
-    var nscore_centigrade = document.getElementById("myinfo_score").value;
+    var nscore_percent = document.getElementById("myinfo_score").value;
     var nstatus = document.getElementById("myinfo_status").value;
     var nepsseen = document.getElementById("myinfo_watchedeps").value;
     var naid = document.getElementById("myinfo_anime_id").value;
     var curstats = document.getElementById("myinfo_curstatus").value;
-    var nscore = Math.round(nscore_centigrade / 10.);
+    var nscore = Math.round(nscore_percent / 10.);
     var payload = {};
 
     document.getElementById("myinfoDisplay").innerHTML = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
@@ -53,7 +53,7 @@ function patched_myinfo_updateInfo(entry_id) {
         document.getElementById("myinfoDisplay").innerHTML = data;
     });
 
-    payload[entry_id] = nscore_centigrade;
+    payload[entry_id] = nscore_percent;
     chrome.storage.local.set(payload);
 }
 

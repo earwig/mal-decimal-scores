@@ -1,17 +1,15 @@
 {
     "manifest_version": 2,
-    "name": "MyAnimeList Centigrade Scale",
+    "name": "100-Point Scores for MyAnimeList",
     "version": "0.1",
 
-    "description": "Adds a centigrade scale to MyAnimeList.net's rating system.",
-    "short_name": "MAL Centigrade",
+    "description": "Gives you finer control over MyAnimeList.net scores.",
+    "short_name": "MAL 100",
     "icons": {},
 
     "content_scripts": [{
         "matches": ["http://myanimelist.net/*"],
-        "js": ["jquery.min.js", "centigrade.js"]
+        "js": ["jquery.min.js", "main.js"]
     }],
-    "permissions": [
-        "storage"
-    ]
+    "permissions": ["storage"]
 }
