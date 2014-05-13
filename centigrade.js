@@ -20,34 +20,32 @@ function patched_anime_updateScore(entry_id) {
     chrome.storage.local.set(payload);
 }
 
-function list_hook() {
-    // chrome.storage.local.get(null, function(items) { console.log(items); });
+function hook_animelist() {
     // chrome.storage.local.clear();
+    chrome.storage.local.get(null, function(data) {
+        $("span[id^='scoreval']").each(function(i, el) {
+            var aid = el.id.split("scoreval")[1];
+            var old_div = $("#scorediv" + aid);
+            old_div.attr("id", "delete-me");
+            var new_div = $('<div id="scorediv' + aid + '" style="display: none;"><input type="text" id="scoretext' + aid + '" size="2"><input type="button" value="Go"></div>');
+            new_div.insertAfter(old_div);
+            old_div.remove();
 
-    $("span[id^='scoreval']").each(function(i, el) {
-        var aid = el.id.split("scoreval")[1];
-        var oldscorediv = $("#scorediv" + aid);
-        oldscorediv.attr("id", "delete-me");
-        var newscorediv = $('<div id="scorediv' + aid + '" style="display: none;"><input type="text" id="scoretext' + aid + '" size="2"><input type="button" value="Go"></div>');
-        newscorediv.insertAfter(oldscorediv);
-        oldscorediv.remove();
+            var input = $("#scoretext" + aid);
+            var button = input.next();
+            input.keydown(function(tid) {
+                return function(e) {
+                    return patched_anime_checkScoreEnter(e, tid);
+                }
+            }(aid));
+            button.click(function(tid) {
+                return function() {
+                    return patched_anime_updateScore(tid);
+                }
+            }(aid));
 
-        var input = $("#scoretext" + aid);
-        var button = input.next();
-        input.keydown(function(tid) {
-            return function(e) {
-                return patched_anime_checkScoreEnter(e, tid);
-            }
-        }(aid));
-        button.click(function(tid) {
-            return function() {
-                return patched_anime_updateScore(tid);
-            }
-        }(aid));
-
-        chrome.storage.local.get(aid, function(items) {
-            if (aid in items) {
-                $(el).text(items[aid]);
+            if (aid in data) {
+                $(el).text(data[aid]);
             }
             else {
                 var cur = parseInt($(el).text());
@@ -58,8 +56,34 @@ function list_hook() {
     });
 }
 
+function hook_anime(aid) {
+    chrome.storage.local.get(aid, function(data) {
+        var old_input = $("#myinfo_score");
+        var score;
+        if (aid in data) {
+            score = data[aid];
+        }
+        else {
+            var old_score = parseInt(old_input.val());
+            if (old_score == 0)
+                score = "";
+            else
+                score = old_score * 10;
+        }
+        old_input.attr("id", "delete-me");
+        var new_input = $('<input type="text" id="myinfo_score" name="myinfo_score" class="inputtext" size="3" value="' + score + '"><span> / 100</span>');
+        new_input.insertAfter(old_input);
+        old_input.remove();
+    });
+}
+
 $(document).ready(function() {
     if (window.location.href.indexOf("/animelist/") != -1) {
-        list_hook();
+        hook_animelist();
+    } else if (window.location.href.indexOf("/anime/") != -1) {
+        var aid = window.location.href.substr(window.location.href.indexOf("/anime/") + "/anime/".length);
+        if (aid.indexOf("/") != -1)
+            aid = aid.substr(0, aid.indexOf("/"));
+        hook_anime(aid);
     }
 });
