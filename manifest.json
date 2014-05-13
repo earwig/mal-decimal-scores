@@ -9,7 +9,6 @@
 
     "content_scripts": [{
         "matches": ["http://myanimelist.net/*"],
-        "css": ["centigrade.css"],
         "js": ["jquery.min.js", "centigrade.js"]
     }],
     "permissions": [
