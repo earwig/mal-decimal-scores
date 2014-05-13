@@ -1,0 +1,18 @@
+{
+    "manifest_version": 2,
+    "name": "MyAnimeList Centigrade Scale",
+    "version": "0.1",
+
+    "description": "Adds a centigrade scale to MyAnimeList.net's rating system.",
+    "short_name": "MAL Centigrade",
+    "icons": {},
+
+    "content_scripts": [{
+        "matches": ["http://myanimelist.net/*"],
+        "css": ["centigrade.css"],
+        "js": ["jquery.min.js", "centigrade.js"]
+    }],
+    "permissions": [
+        "storage"
+    ]
+}
