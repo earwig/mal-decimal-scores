@@ -9,7 +9,8 @@
 
     "content_scripts": [{
         "matches": ["http://myanimelist.net/*"],
-        "js": ["jquery.min.js", "main.js"]
+        "js": ["jquery.min.js", "main.js"],
+        "all_frames": true
     }],
     "permissions": ["storage"]
 }
