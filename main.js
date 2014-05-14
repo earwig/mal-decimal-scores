@@ -6,9 +6,15 @@ var LOADING_IMG = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gi
 /* Miscellaneous functions */
 
 function get_anime_id_from_href(href) {
-    var anime_id = href.substr(href.indexOf("/anime/") + "/anime/".length);
+    var anime_id;
+    if (href.indexOf("/anime/") != -1)
+        anime_id = href.substr(href.indexOf("/anime/") + "/anime/".length);
+    else
+        anime_id = href.substr(href.indexOf("id=") + "id=".length);
     if (anime_id.indexOf("/") != -1)
         anime_id = anime_id.substr(0, anime_id.indexOf("/"));
+    if (anime_id.indexOf("&") != -1)
+        anime_id = anime_id.substr(0, anime_id.indexOf("&"));
     return anime_id;
 }
 
@@ -129,6 +135,21 @@ function update_anime_score(anime_id, is_new) {
     save_score(anime_id, new_score_100);
 }
 
+function submit_add_form(submit_button) {
+    var anime_id = $("input[name='series_title']").val();
+    if (!anime_id)
+        return submit_button[0].click();
+
+    var new_scores = get_scores_from_element($("#score_input"));
+    if (new_scores === null)
+        return;
+
+    var new_score_100 = new_scores[0], new_score_10 = new_scores[1];
+    $("select[name='score']").val(new_score_10);
+    save_score(anime_id, new_score_100);
+    submit_button[0].click();
+}
+
 function submit_edit_form(anime_id, submit_type, submit_button) {
     if (submit_type == 2) {
         var new_scores = get_scores_from_element($("#score_input"));
@@ -223,6 +244,29 @@ function hook_anime(anime_id) {
     });
 }
 
+function hook_add() {
+    var old_input = $("select[name='score']");
+    var old_submit = $("input[type='button'][onclick='checkValidSubmit(1)']");
+
+    old_input.after($("<span> / 100</span>"))
+        .after($("<input>")
+            .attr("type", "text")
+            .attr("id", "score_input")
+            .attr("class", "inputtext")
+            .attr("size", "3"))
+        .hide();
+
+    old_submit.after($("<input>")
+            .attr("type", "button")
+            .attr("class", "inputButton")
+            .attr("style", old_submit.attr("style"))
+            .attr("value", old_submit.attr("value"))
+            .click(function(button) {
+                    return function() { return submit_add_form(button); }
+                }(old_submit)))
+        .hide();
+}
+
 function hook_edit(anime_id) {
     retrieve_scores(anime_id, function(score) {
         var old_input = $("select[name='score']");
@@ -249,7 +293,7 @@ function hook_edit(anime_id) {
                 .attr("style", old_edit.attr("style"))
                 .attr("value", old_edit.attr("value"))
                 .click(function(a_id, button) {
-                        return function() { return submit_edit_form(a_id, 2, old_edit); }
+                        return function() { return submit_edit_form(a_id, 2, button); }
                     }(anime_id, old_edit)))
             .hide();
 
@@ -258,7 +302,7 @@ function hook_edit(anime_id) {
                 .attr("class", "inputButton")
                 .attr("value", old_delete.attr("value"))
                 .click(function(a_id, button) {
-                        return function() { return submit_edit_form(a_id, 3, old_delete); }
+                        return function() { return submit_edit_form(a_id, 3, button); }
                     }(anime_id, old_delete)))
             .hide();
     });
@@ -270,8 +314,10 @@ $(document).ready(function() {
     var href = window.location.href;
     if (href.indexOf("/animelist/") != -1)
         hook_list();
-    else if (href.indexOf("/anime/") != -1)
+    else if (href.indexOf("/anime/") != -1 || href.indexOf("/anime.php") != -1)
         hook_anime(get_anime_id_from_href(href));
+    else if (href.indexOf("/panel.php") != -1 && href.indexOf("go=add") != -1)
+        hook_add(null);
     else if (href.indexOf("/editlist.php") != -1 && href.indexOf("type=anime") != -1)
         hook_edit(get_edit_id_from_href(href));
 });
