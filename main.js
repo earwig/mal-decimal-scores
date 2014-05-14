@@ -175,8 +175,11 @@ function submit_edit_form(anime_id, submit_type, submit_button) {
 function compare(row1, row2) {
     var r1 = $(row1).find("span[id^='scoreval']").text(),
         r2 = $(row2).find("span[id^='scoreval']").text();
-    if (r1 == "-" && r2 == "-")
-        return 0;
+    if (r1 == r2) {
+        r1 = $(row1).find("a.animetitle span").text();
+        r2 = $(row2).find("a.animetitle span").text();
+        return r1 > r2 ? 1 : -1;
+    }
     if (r1 == "-")
         return 1;
     if (r2 == "-")
