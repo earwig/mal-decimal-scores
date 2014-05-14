@@ -308,6 +308,11 @@ function hook_edit(anime_id) {
     });
 }
 
+function hook_addtolist() {
+    /* TODO: this entry point is unimplemented - it's rarely used and difficult
+       to inject into, so I'm avoiding it for now. */
+}
+
 /* Main extension hook */
 
 $(document).ready(function() {
@@ -317,7 +322,9 @@ $(document).ready(function() {
     else if (href.indexOf("/anime/") != -1 || href.indexOf("/anime.php") != -1)
         hook_anime(get_anime_id_from_href(href));
     else if (href.indexOf("/panel.php") != -1 && href.indexOf("go=add") != -1)
-        hook_add(null);
+        hook_add();
     else if (href.indexOf("/editlist.php") != -1 && href.indexOf("type=anime") != -1)
         hook_edit(get_edit_id_from_href(href));
+    else if (href.indexOf("/addtolist.php") != -1)
+        hook_addtolist();
 });
