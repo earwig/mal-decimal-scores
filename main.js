@@ -3,6 +3,25 @@
 var MAX_BUCKETS = 256;
 var LOADING_IMG = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
 
+/* Miscellaneous functions */
+
+function get_anime_id_from_href(href) {
+    var anime_id = href.substr(href.indexOf("/anime/") + "/anime/".length);
+    if (anime_id.indexOf("/") != -1)
+        anime_id = anime_id.substr(0, anime_id.indexOf("/"));
+    return anime_id;
+}
+
+function get_scores_from_element(elem) {
+    var score_100 = parseInt(elem.val());
+    var score_10 = Math.round(score_100 / 10.);
+    if (isNaN(score_100) || score_100 < 1 || score_100 > 100) {
+        alert("Invalid score: must be an integer between 1 and 100.");
+        return null;
+    }
+    return [score_100, score_10];
+}
+
 /* Storage functions */
 
 function get_scores(anime_id, callback) {
@@ -38,8 +57,11 @@ function set_score(anime_id, score) {
 /* Event patches */
 
 function update_list_score(anime_id) {
-    var new_score_100 = $("#scoretext" + anime_id).val();
-    var new_score_10 = Math.round(new_score_100 / 10.);
+    var new_scores = get_scores_from_element($("#scoretext" + anime_id));
+    if (new_scores === null)
+        return;
+
+    var new_score_100 = new_scores[0], new_score_10 = new_scores[1];
     var payload = {id: anime_id, score: new_score_10};
 
     $("#scorebutton" + anime_id).prop("disabled", true);
@@ -53,8 +75,11 @@ function update_list_score(anime_id) {
 }
 
 function update_anime_score(anime_id, is_new) {
-    var new_score_100 = $("#myinfo_score").val();
-    var new_score_10 = Math.round(new_score_100 / 10.);
+    var new_scores = get_scores_from_element($("#myinfo_score"));
+    if (new_scores === null)
+        return;
+
+    var new_score_100 = new_scores[0], new_score_10 = new_scores[1];
     var t_id, payload = {score: new_score_10};
     payload["status"] = $("#myinfo_status").val();
     payload["epsseen"] = $("#myinfo_watchedeps").val();
@@ -158,15 +183,6 @@ function hook_anime(anime_id) {
                     }(anime_id, is_new)))
             .remove();
     });
-}
-
-/* Miscellaneous functions */
-
-function get_anime_id_from_href(href) {
-    var anime_id = href.substr(href.indexOf("/anime/") + "/anime/".length);
-    if (anime_id.indexOf("/") != -1)
-        anime_id = anime_id.substr(0, anime_id.indexOf("/"));
-    return anime_id;
 }
 
 /* Main extension hook */
