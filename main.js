@@ -1,7 +1,9 @@
-/* ------------------------------- Constants ------------------------------- */
+/* -------------------------------- Globals -------------------------------- */
 
 var MAX_BUCKETS = 256;
 var LOADING_IMG = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
+
+var should_sort = window.location.href.indexOf("order=4") != -1;
 
 /* ------------------------ Miscellaneous functions ------------------------ */
 
@@ -98,6 +100,8 @@ function update_list_score(anime_id) {
         $("#scoretext" + anime_id).val("");
         $("#scorediv" + anime_id).css("display", "none");
         $("#scorebutton" + anime_id).prop("disabled", false);
+        if (should_sort)
+            sort_list();
     });
     save_score(anime_id, new_score_100);
 }
@@ -168,7 +172,19 @@ function submit_edit_form(anime_id, submit_type, submit_button) {
 
 /* -------------------------------- Sorting -------------------------------- */
 
-function sort_list() {
+function compare(row1, row2) {
+    var r1 = $(row1).find("span[id^='scoreval']").text(),
+        r2 = $(row2).find("span[id^='scoreval']").text();
+    if (r1 == "-" && r2 == "-")
+        return 0;
+    if (r1 == "-")
+        return 1;
+    if (r2 == "-")
+        return -1;
+    return r2 - r1;
+}
+
+function setup_sortable_list() {
     var headers = [".header_cw", ".header_completed", ".header_onhold",
                    ".header_dropped", ".header_ptw"];
     $.each(headers, function(i, header) {
@@ -181,13 +197,14 @@ function sort_list() {
         $(row).add($(row).next())
             .wrapAll('<div class="list-chart-row"/>');
     });
+}
 
+function sort_list() {
     $(".list-chart-group").each(function(i, group) {
-        $(group).find(".list-chart-row").sort(function (a, b) {
-            return $(b).find("span[id^='scoreval']").text() - $(a).find("span[id^='scoreval']").text();
-        }).each(function(i, row) {
+        $(group).find(".list-chart-row").sort(compare).each(function(i, row) {
             $(group).append(row);
         });
+
         $(group).find(".list-chart-row").each(function(i, row) {
             $(row).find("tr").first().children().first().text(i + 1);
             $(row).find((i % 2) ? ".td1" : ".td2").toggleClass("td1 td2");
@@ -238,8 +255,10 @@ function hook_list() {
                 .remove();
         });
 
-        if (window.location.href.indexOf("order=4") != -1)
+        if (should_sort) {
+            setup_sortable_list();
             sort_list();
+        }
     });
 }
 
