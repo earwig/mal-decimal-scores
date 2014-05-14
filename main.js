@@ -1,9 +1,9 @@
-/* Constants */
+/* ------------------------------- Constants ------------------------------- */
 
 var MAX_BUCKETS = 256;
 var LOADING_IMG = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
 
-/* Miscellaneous functions */
+/* ------------------------ Miscellaneous functions ------------------------ */
 
 function get_anime_id_from_href(href) {
     var anime_id;
@@ -35,7 +35,7 @@ function get_scores_from_element(elem) {
     return [score_100, score_10];
 }
 
-/* Storage functions */
+/* --------------------------- Storage functions --------------------------- */
 
 function save_score(anime_id, score) {
     var bucket_id = (parseInt(anime_id) % MAX_BUCKETS).toString();
@@ -82,7 +82,7 @@ function remove_score(anime_id) {
     });
 }
 
-/* Event patches/injections */
+/* ----------------------- Event patches/injections ------------------------ */
 
 function update_list_score(anime_id) {
     var new_scores = get_scores_from_element($("#scoretext" + anime_id));
@@ -166,7 +166,36 @@ function submit_edit_form(anime_id, submit_type, submit_button) {
     submit_button[0].click();
 }
 
-/* Extension hooks */
+/* -------------------------------- Sorting -------------------------------- */
+
+function sort_list() {
+    var headers = [".header_cw", ".header_completed", ".header_onhold",
+                   ".header_dropped", ".header_ptw"];
+    $.each(headers, function(i, header) {
+        $(header).next()
+            .nextUntil($(".category_totals").closest("table"))
+            .wrapAll('<div class="list-chart-group"/>');
+    });
+
+    $(".list-chart-group table").each(function(i, row) {
+        $(row).add($(row).next())
+            .wrapAll('<div class="list-chart-row"/>');
+    });
+
+    $(".list-chart-group").each(function(i, group) {
+        $(group).find(".list-chart-row").sort(function (a, b) {
+            return $(b).find("span[id^='scoreval']").text() - $(a).find("span[id^='scoreval']").text();
+        }).each(function(i, row) {
+            $(group).append(row);
+        });
+        $(group).find(".list-chart-row").each(function(i, row) {
+            $(row).find("tr").first().children().first().text(i + 1);
+            $(row).find((i % 2) ? ".td1" : ".td2").toggleClass("td1 td2");
+        });
+    });
+}
+
+/* ---------------------------- Extension hooks ---------------------------- */
 
 function hook_list() {
     retrieve_scores(null, function(data) {
@@ -208,6 +237,9 @@ function hook_list() {
                             }(anime_id))))
                 .remove();
         });
+
+        if (window.location.href.indexOf("order=4") != -1)
+            sort_list();
     });
 }
 
@@ -311,9 +343,14 @@ function hook_edit(anime_id) {
 function hook_addtolist() {
     /* TODO: this entry point is unimplemented - it's rarely used and difficult
        to inject into, so I'm avoiding it for now. */
+    $("<p><b>Note:</b> For the time being, anime added through this " +
+      "interface cannot be given scores on the 100-point scale (the old " +
+      "10-point system is used).</p><p>To give a more specific number, " +
+      "simply add the anime here, then go to its own page or to your list " +
+      "page, and update the score.</p>").insertAfter($("#stype").parent());
 }
 
-/* Main extension hook */
+/* ------------------------------- Main hook ------------------------------- */
 
 $(document).ready(function() {
     var href = window.location.href;
