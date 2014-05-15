@@ -28,10 +28,10 @@ function get_edit_id_from_href(href) {
 }
 
 function get_scores_from_element(elem) {
-    var score_100 = parseInt(elem.val());
-    var score_10 = Math.round(score_100 / 10.);
-    if (isNaN(score_100) || score_100 < 1 || score_100 > 100) {
-        alert("Invalid score: must be an integer between 1 and 100.");
+    var score_100 = Math.round(elem.val() * 10) / 10;
+    var score_10 = Math.round(elem.val());
+    if (isNaN(score_100) || score_100 < 1 || score_100 > 10) {
+        alert("Invalid score: must be a decimal between 1.0 and 10.0.");
         return null;
     }
     return [score_100, score_10];
@@ -229,7 +229,7 @@ function hook_list() {
             else {
                 var current = parseInt($(elem).text());
                 if (!isNaN(current))
-                    $(elem).text(current * 10);
+                    $(elem).text(current + ".0");
             }
 
             $("#scorediv" + anime_id)
@@ -273,10 +273,10 @@ function hook_anime(anime_id) {
 
         if (!is_new && score === null) {
             var old_score = parseInt(old_input.val());
-            score = old_score == 0 ? "" : old_score * 10;
+            score = old_score == 0 ? "" : old_score + ".0";
         }
 
-        old_input.after($("<span> / 100</span>"))
+        old_input.after($("<span> / 10.0</span>"))
             .after($("<input>")
                 .attr("type", "text")
                 .attr("id", "myinfo_score")
@@ -302,7 +302,7 @@ function hook_add() {
     var old_input = $("select[name='score']");
     var old_submit = $("input[type='button'][onclick='checkValidSubmit(1)']");
 
-    old_input.after($("<span> / 100</span>"))
+    old_input.after($("<span> / 10.0</span>"))
         .after($("<input>")
             .attr("type", "text")
             .attr("id", "score_input")
@@ -329,10 +329,10 @@ function hook_edit(anime_id) {
 
         if (score === null) {
             var old_score = parseInt(old_input.val());
-            score = old_score == 0 ? "" : old_score * 10;
+            score = old_score == 0 ? "" : old_score + ".0";
         }
 
-        old_input.after($("<span> / 100</span>"))
+        old_input.after($("<span> / 10.0</span>"))
             .after($("<input>")
                 .attr("type", "text")
                 .attr("id", "score_input")

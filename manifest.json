@@ -1,10 +1,10 @@
 {
     "manifest_version": 2,
-    "name": "100-Point Scores for MyAnimeList",
+    "name": "Decimal Scores for MyAnimeList",
     "version": "0.1",
 
     "description": "Gives you finer control over MyAnimeList.net scores.",
-    "short_name": "MAL 100",
+    "short_name": "MAL Decimal",
     "icons": {},
 
     "content_scripts": [{
