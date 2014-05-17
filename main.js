@@ -27,14 +27,15 @@ function get_edit_id_from_href(href) {
     return anime_id;
 }
 
-function get_scores_from_element(elem) {
-    var score_100 = Math.round(elem.val() * 10) / 10;
-    var score_10 = Math.round(elem.val());
-    if (isNaN(score_100) || score_100 < 1 || score_100 > 10) {
-        alert("Invalid score: must be a decimal between 1.0 and 10.0.");
+function get_score_from_element(elem) {
+    var score = Math.round(elem.val() * 10) / 10;
+    if (isNaN(score) || ((score < 1 || score > 10) && score != 0)) {
+        alert("Invalid score: must be a number between 1.0 and 10.0, or 0.");
         return null;
     }
-    return [score_100, score_10];
+    if (score == Math.round(score))
+        score += ".0"
+    return score;
 }
 
 /* --------------------------- Storage functions --------------------------- */
@@ -87,35 +88,31 @@ function remove_score(anime_id) {
 /* ----------------------- Event patches/injections ------------------------ */
 
 function update_list_score(anime_id) {
-    var new_scores = get_scores_from_element($("#scoretext" + anime_id));
-    if (new_scores === null)
+    var new_score = get_score_from_element($("#scoretext" + anime_id));
+    if (new_score === null)
         return;
-
-    var new_score_100 = new_scores[0], new_score_10 = new_scores[1];
-    var payload = {id: anime_id, score: new_score_10};
+    var payload = {id: anime_id, score: Math.round(new_score)};
 
     $("#scorebutton" + anime_id).prop("disabled", true);
     $.post("/includes/ajax.inc.php?t=63", payload, function(data) {
-        $("#scoreval" + anime_id).text(new_score_100);
+        $("#scoreval" + anime_id).text(new_score == 0 ? "-" : new_score);
         $("#scoretext" + anime_id).val("");
         $("#scorediv" + anime_id).css("display", "none");
         $("#scorebutton" + anime_id).prop("disabled", false);
         if (should_sort)
             sort_list();
     });
-    save_score(anime_id, new_score_100);
+    save_score(anime_id, new_score);
 }
 
 function update_anime_score(anime_id, is_new) {
-    var new_scores = get_scores_from_element($("#myinfo_score"));
-    if (new_scores === null)
+    var new_score = get_score_from_element($("#myinfo_score"));
+    if (new_score === null)
         return;
 
-    var new_score_100 = new_scores[0], new_score_10 = new_scores[1];
-    var t_id, payload = {score: new_score_10};
+    var t_id, payload = {score: Math.round(new_score)};
     payload["status"] = $("#myinfo_status").val();
     payload["epsseen"] = $("#myinfo_watchedeps").val();
-
     if (is_new) {
         payload["aid"] = anime_id;
         t_id = "61";
@@ -130,13 +127,13 @@ function update_anime_score(anime_id, is_new) {
     $("#myinfoDisplay").html(LOADING_IMG);
     $.post("/includes/ajax.inc.php?t=" + t_id, payload, function(data) {
         if (is_new) {
-            document.getElementById("myinfoDisplay").innerHTML = "";
-            document.getElementById("addtolist").innerHTML = data;
+            $("#myinfoDisplay").html("");
+            $("#addtolist").html(data);
         }
         else
-            document.getElementById("myinfoDisplay").innerHTML = data;
+            $("#myinfoDisplay").html(data);
     });
-    save_score(anime_id, new_score_100);
+    save_score(anime_id, new_score);
 }
 
 function submit_add_form(submit_button) {
@@ -144,25 +141,23 @@ function submit_add_form(submit_button) {
     if (!anime_id)
         return submit_button[0].click();
 
-    var new_scores = get_scores_from_element($("#score_input"));
-    if (new_scores === null)
+    var new_score = get_score_from_element($("#score_input"));
+    if (new_score === null)
         return;
 
-    var new_score_100 = new_scores[0], new_score_10 = new_scores[1];
-    $("select[name='score']").val(new_score_10);
-    save_score(anime_id, new_score_100);
+    $("select[name='score']").val(Math.round(new_score));
+    save_score(anime_id, new_score);
     submit_button[0].click();
 }
 
 function submit_edit_form(anime_id, submit_type, submit_button) {
     if (submit_type == 2) {
-        var new_scores = get_scores_from_element($("#score_input"));
-        if (new_scores === null)
+        var new_score = get_score_from_element($("#score_input"));
+        if (new_score === null)
             return;
 
-        var new_score_100 = new_scores[0], new_score_10 = new_scores[1];
-        $("select[name='score']").val(new_score_10);
-        save_score(anime_id, new_score_100);
+        $("select[name='score']").val(Math.round(new_score));
+        save_score(anime_id, new_score);
     }
     else if (submit_type == 3)
         remove_score(anime_id);
@@ -225,7 +220,7 @@ function hook_list() {
             var bucket = data[bucket_id];
 
             if (bucket !== undefined && bucket[anime_id] !== undefined)
-                $(elem).text(bucket[anime_id]);
+                $(elem).text(bucket[anime_id] == 0 ? "-" : bucket[anime_id]);
             else {
                 var current = parseInt($(elem).text());
                 if (!isNaN(current))
@@ -271,10 +266,8 @@ function hook_anime(anime_id) {
         var old_button = $("input[name='myinfo_submit']");
         var is_new = old_button.attr("value") == "Add";
 
-        if (!is_new && score === null) {
-            var old_score = parseInt(old_input.val());
-            score = old_score == 0 ? "" : old_score + ".0";
-        }
+        if (!is_new && score === null)
+            score = parseInt(old_input.val()) + ".0";
 
         old_input.after($("<span> / 10.0</span>"))
             .after($("<input>")
@@ -282,7 +275,7 @@ function hook_anime(anime_id) {
                 .attr("id", "myinfo_score")
                 .attr("name", "myinfo_score")
                 .attr("class", "inputtext")
-                .attr("value", (score === null) ? "" : score)
+                .attr("value", (score === null || score == 0) ? "" : score)
                 .attr("size", "3"))
             .remove();
 
@@ -327,17 +320,15 @@ function hook_edit(anime_id) {
         var old_edit = $("input[type='button'][onclick='checkValidSubmit(2)']");
         var old_delete = $("input[type='button'][onclick='checkValidSubmit(3)']");
 
-        if (score === null) {
-            var old_score = parseInt(old_input.val());
-            score = old_score == 0 ? "" : old_score + ".0";
-        }
+        if (score === null)
+            score = parseInt(old_input.val()) + ".0";
 
         old_input.after($("<span> / 10.0</span>"))
             .after($("<input>")
                 .attr("type", "text")
                 .attr("id", "score_input")
                 .attr("class", "inputtext")
-                .attr("value", score)
+                .attr("value", score == 0 ? "" : score)
                 .attr("size", "3"))
             .hide();
 
