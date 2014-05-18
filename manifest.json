@@ -5,7 +5,10 @@
 
     "description": "Gives you finer control over MyAnimeList.net scores.",
     "short_name": "MAL Decimal",
-    "icons": {},
+    "icons": {
+        "48": "icon48.png",
+        "128": "icon128.png"
+    },
 
     "content_scripts": [{
         "matches": ["http://myanimelist.net/*"],
