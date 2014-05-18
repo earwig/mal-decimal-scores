@@ -138,6 +138,54 @@ function remove_score(anime_id) {
     });
 }
 
+function export_scores() {
+    chrome.storage.sync.get(null, function(dat) {
+        var blob = new Blob([JSON.stringify(dat)], {type: "application/json"});
+        $($("<a>")
+            .attr("href", window.URL.createObjectURL(blob))
+            .attr("download", "animelist_decimal_scores.json")
+            .hide()
+            .appendTo($("body"))[0].click()).remove();
+    });
+}
+
+function validate_score_data(data) {
+    if (!$.isPlainObject(data))
+        throw "invalid data type: " + data;
+    if (JSON.stringify(data).length > chrome.storage.sync.QUOTA_BYTES)
+        throw "file too large";
+
+    for (var bucket_id in data) {
+        if (data.hasOwnProperty(bucket_id)) {
+            if (isNaN(parseInt(bucket_id) || bucket_id >= MAX_BUCKETS))
+                throw "invalid bucket ID: " + bucket_id;
+            var bucket = data[bucket_id];
+            if (!$.isPlainObject(bucket))
+                throw "invalid bucket type: " + bucket;
+            for (var anime_id in bucket) {
+                if (data.hasOwnProperty(anime_id)) {
+                    if (isNaN(parseInt(anime_id)))
+                        throw "invalid anime ID: " + anime_id;
+                    if (parseInt(anime_id) % MAX_BUCKETS != bucket_id)
+                        throw "anime is in the wrong bucket: " + anime_id;
+                    var score = parseFloat(bucket[anime_id]);
+                    if (isNaN(score))
+                        throw "score is not a number: " + score;
+                    if ((score < 1 || score > 10) && score != 0)
+                        throw "score out of range: " + score;
+                }
+            }
+        }
+    }
+}
+
+function import_scores(data, callback) {
+    validate_score_data(data);
+    chrome.storage.sync.clear(function() {
+        chrome.storage.sync.set(data, callback);
+    });
+}
+
 /* ----------------------- Event patches/injections ------------------------ */
 
 function update_list_score(anime_id) {
@@ -307,15 +355,13 @@ function hook_list() {
         $("span[id^='scoreval']").each(function(i, elem) {
             var anime_id = elem.id.split("scoreval")[1];
 
-            $(elem).after($("<span>")
-                .css("display", "none").text($(elem).text()));
-
+            $(elem).after($("<span>").hide().text($(elem).text()));
             load_score_into_element(data, anime_id, $(elem));
 
             $("#scorediv" + anime_id)
                 .after($("<div>")
                     .attr("id", "scorediv" + anime_id)
-                    .css("display", "none")
+                    .hide()
                     .append($('<input>')
                         .attr("type", "text")
                         .attr("id", "scoretext" + anime_id)
@@ -504,6 +550,80 @@ function hook_addtolist() {
       "page, and update the score.</p>").insertAfter($("#stype").parent());
 }
 
+function hook_export() {
+    chrome.storage.sync.getBytesInUse(null, function(usage) {
+        usage = Math.round(usage / 1024 * 10) / 10;
+        usage += " kB / " + chrome.storage.sync.QUOTA_BYTES / 1024 + " kB";
+        $("#dialog td")
+            .append($("<hr>")
+                .css("border", "none")
+                .css("background-color", "#AAA")
+                .css("height", "1px"))
+            .append($("<p>")
+                .html("The regular list export above will only include " +
+                      "rounded scores. You can export your decimal scores " +
+                      "separately and " +
+                      '<a href="http://myanimelist.net/import.php">import ' +
+                      "them</a> later."))
+            .append($("<div>")
+                .attr("class", "spaceit")
+                .html("Chrome Sync usage: " + usage))
+            .append($("<input>")
+                .attr("type", "submit")
+                .attr("value", "Export Decimal Scores")
+                .attr("class", "inputButton")
+                .click(export_scores));
+    });
+}
+
+function hook_import() {
+    $("#content").append($("<hr>")
+            .css("border", "none")
+            .css("background-color", "#AAA")
+            .css("height", "1px"))
+        .append($("<p>")
+            .html("You can also import decimal scores here. Doing so will " +
+                  "erase any existing decimal scores."))
+        .append($("<div>")
+            .attr("class", "spaceit")
+            .append($("<input>")
+                .attr("id", "decimal-file")
+                .attr("size", "60")
+                .attr("type", "file")
+                .attr("class", "inputtext")))
+        .append($("<input>")
+            .attr("id", "decimal-submit")
+            .attr("type", "submit")
+            .attr("value", "Import Decimal Scores")
+            .attr("class", "inputButton")
+            .click(function() {
+                var filelist = $("#decimal-file")[0].files, file, reader;
+                if (filelist.length != 1)
+                    return;
+                file = filelist[0];
+                if (file.type != "application/json") {
+                    alert("Invalid file type: must be .json.");
+                    return;
+                }
+                reader = new FileReader();
+                reader.onload = function() {
+                    try {
+                        import_scores(JSON.parse(reader.result), function() {
+                            $("#decimal-file").after("<p>Success!</p>")
+                                .remove();
+                            $("#decimal-submit").remove();
+                        });
+                    } catch (exc) {
+                        if (typeof exc === "object")
+                            alert("The file could not be parsed as JSON.");
+                        else
+                            alert("Error validating data: " + exc);
+                    }
+                };
+                reader.readAsText(file);
+            }));
+}
+
 /* ------------------------------- Main hook ------------------------------- */
 
 $(document).ready(function() {
@@ -524,5 +644,9 @@ $(document).ready(function() {
             hook_shared();
         else if (href.contains("/addtolist.php"))
             hook_addtolist();
+        else if (href.contains("/panel.php") && href.contains("go=export"))
+            hook_export();
+        else if (href.contains("/import.php"))
+            hook_import();
     }
 });
