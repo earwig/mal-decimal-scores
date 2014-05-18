@@ -7,6 +7,13 @@ var should_sort = window.location.href.indexOf("order=4") != -1;
 
 /* ------------------------ Miscellaneous functions ------------------------ */
 
+/* Note: complaints about modifying objects we don't own are ignored since
+   these changes are only executed within the context of a Chrome extension. */
+
+String.prototype.contains = function(substr) {
+    return this.indexOf(substr) != -1;
+};
+
 String.prototype.cut_after = function(substr) {
     return this.substr(this.indexOf(substr) + substr.length)
 };
@@ -17,20 +24,20 @@ String.prototype.cut_before = function(substr) {
 
 function get_anime_id_from_href(href) {
     var anime_id;
-    if (href.indexOf("/anime/") != -1)
+    if (href.contains("/anime/"))
         anime_id = href.cut_after("/anime/");
     else
         anime_id = href.cut_after("id=");
-    if (anime_id.indexOf("/") != -1)
+    if (anime_id.contains("/"))
         anime_id = anime_id.cut_before("/");
-    if (anime_id.indexOf("&") != -1)
+    if (anime_id.contains("&"))
         anime_id = anime_id.cut_before("&");
     return anime_id;
 }
 
 function get_edit_id_from_href(href) {
     var anime_id = href.cut_after("id=");
-    if (anime_id.indexOf("&") != -1)
+    if (anime_id.contains("&"))
         anime_id = anime_id.cut_before("&");
     return anime_id;
 }
@@ -422,21 +429,21 @@ function hook_addtolist() {
 
 $(document).ready(function() {
     var href = window.location.href;
-    if (href.indexOf("/animelist/") != -1) {
+    if (href.contains("/animelist/")) {
         var list_info = $("#mal_cs_otherlinks div:first");
         if (list_info.text() == "You are viewing your anime list")
             hook_list();
     }
     else if ($("#malLogin").length == 0) {
-        if (href.indexOf("/anime/") != -1 || href.indexOf("/anime.php") != -1)
+        if (href.contains("/anime/") || href.contains("/anime.php"))
             hook_anime(get_anime_id_from_href(href));
-        else if (href.indexOf("/panel.php") != -1 && href.indexOf("go=add") != -1)
+        else if (href.contains("/panel.php") && href.contains("go=add"))
             hook_add();
-        else if (href.indexOf("/editlist.php") != -1 && href.indexOf("type=anime") != -1)
+        else if (href.contains("/editlist.php") && href.contains("type=anime"))
             hook_edit(get_edit_id_from_href(href));
-        else if (href.indexOf("/shared.php") != -1)
+        else if (href.contains("/shared.php") && !href.contains("type=manga"))
             hook_shared();
-        else if (href.indexOf("/addtolist.php") != -1)
+        else if (href.contains("/addtolist.php"))
             hook_addtolist();
     }
 });
