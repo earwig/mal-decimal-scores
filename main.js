@@ -22,6 +22,10 @@ String.prototype.cut_before = function(substr) {
     return this.substr(0, this.indexOf(substr));
 };
 
+String.prototype.cut = function(after, before) {
+    return this.cut_after(after).cut_before(before);
+}
+
 function round_score(num) {
     num = Math.round(num * 10) / 10;
     if (isNaN(num))
@@ -245,15 +249,15 @@ function sort_list() {
 }
 
 function apply_stats(elem, old_sum, new_sum, nums) {
-    var old_score = elem.text().cut_after("Score: ").cut_before(",");
-    var old_dev = elem.text().cut_after("Dev.: ").cut_before("\n");
+    var old_score = elem.text().cut("Mean Score: ", ",");
+    var old_dev = elem.text().cut("Score Dev.: ", "\n");
     var mean = round_score(new_sum / nums) || "0.0";
     var deviation = (new_sum - old_sum) / nums + parseFloat(old_dev) || 0;
     deviation = Math.round(deviation * 100) / 100;
 
     elem.text(elem.text()
-        .replace("Score: " + old_score, "Score: " + mean)
-        .replace("Dev.: " + old_dev, "Dev.: " + deviation));
+        .replace("Mean Score: " + old_score, "Mean Score: " + mean)
+        .replace("Score Dev.: " + old_dev, "Score Dev.: " + deviation));
 }
 
 function update_list_stats() {
@@ -436,8 +440,7 @@ function hook_shared() {
         var score_sum = 0, diff_sum = 0, score_nums = 0, diff_nums = 0;
 
         shared_table.find("tr").slice(1, -2).each(function(i, row) {
-            var anime_id = $(row).find("a").attr("href")
-                            .cut_after("/anime/").cut_before("/");
+            var anime_id = $(row).find("a").attr("href").cut("/anime/", "/");
             var our_cell = $($(row).find("td")[our_pos]).find("span");
             var their_cell = $($(row).find("td")[our_pos == 1 ? 2 : 1]);
             var diff_cell = $($(row).find("td")[3]);
@@ -457,16 +460,18 @@ function hook_shared() {
 
         unique_table = $($("#content h2")[our_pos]).next();
         unique_table.find("tr").slice(1, -1).each(function(i, row) {
-            var anime_id = $(row).find("a").attr("href")
-                            .cut_after("/anime/").cut_before("/");
+            var anime_id = $(row).find("a").attr("href").cut("/anime/", "/");
             var cell = $(row).find("td:nth(1)").find("span");
             load_score_into_element(data, anime_id, cell);
         });
 
         mean_score = round_score(score_sum / score_nums);
+        if (!isNaN(mean_score))
+            $(shared_means.find("td")[our_pos]).find("span").text(mean_score);
+
         mean_diff = Math.round(diff_sum / diff_nums * 100) / 100;
-        $(shared_means.find("td")[our_pos]).find("span").text(mean_score);
-        $(shared_means.find("td")[3]).text(mean_diff);
+        if (!isNaN(mean_diff))
+            $(shared_means.find("td")[3]).text(mean_diff);
     });
 }
 
