@@ -157,7 +157,7 @@ function validate_score_data(data) {
 
     for (var bucket_id in data) {
         if (data.hasOwnProperty(bucket_id)) {
-            if (isNaN(parseInt(bucket_id) || bucket_id >= MAX_BUCKETS))
+            if (isNaN(parseInt(bucket_id)) || bucket_id >= MAX_BUCKETS)
                 throw "invalid bucket ID: " + bucket_id;
             var bucket = data[bucket_id];
             if (!$.isPlainObject(bucket))
