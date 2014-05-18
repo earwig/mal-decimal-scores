@@ -405,6 +405,9 @@ function hook_edit(anime_id) {
     });
 }
 
+function hook_shared() {
+}
+
 function hook_addtolist() {
     /* TODO: this entry point is unimplemented - it's rarely used and difficult
        to inject into, so I'm avoiding it for now. */
@@ -419,14 +422,21 @@ function hook_addtolist() {
 
 $(document).ready(function() {
     var href = window.location.href;
-    if (href.indexOf("/animelist/") != -1)
-        hook_list();
-    else if (href.indexOf("/anime/") != -1 || href.indexOf("/anime.php") != -1)
-        hook_anime(get_anime_id_from_href(href));
-    else if (href.indexOf("/panel.php") != -1 && href.indexOf("go=add") != -1)
-        hook_add();
-    else if (href.indexOf("/editlist.php") != -1 && href.indexOf("type=anime") != -1)
-        hook_edit(get_edit_id_from_href(href));
-    else if (href.indexOf("/addtolist.php") != -1)
-        hook_addtolist();
+    if (href.indexOf("/animelist/") != -1) {
+        var list_info = $("#mal_cs_otherlinks div:first");
+        if (list_info.text() == "You are viewing your anime list")
+            hook_list();
+    }
+    else if ($("#malLogin").length == 0) {
+        if (href.indexOf("/anime/") != -1 || href.indexOf("/anime.php") != -1)
+            hook_anime(get_anime_id_from_href(href));
+        else if (href.indexOf("/panel.php") != -1 && href.indexOf("go=add") != -1)
+            hook_add();
+        else if (href.indexOf("/editlist.php") != -1 && href.indexOf("type=anime") != -1)
+            hook_edit(get_edit_id_from_href(href));
+        else if (href.indexOf("/shared.php") != -1)
+            hook_shared();
+        else if (href.indexOf("/addtolist.php") != -1)
+            hook_addtolist();
+    }
 });
