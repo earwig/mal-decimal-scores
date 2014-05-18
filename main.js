@@ -422,6 +422,22 @@ function hook_edit(anime_id) {
     });
 }
 
+function update_shared_row_colors(row, our_pos) {
+    var our_cell = $(row.find("td")[our_pos]);
+    var their_cell = $(row.find("td")[our_pos == 1 ? 2 : 1]);
+    var diff = our_cell.text() - their_cell.text();
+
+    if (!diff) {
+        row.find("td").css("background-color", "#f6f6f6");
+        our_cell.add(their_cell).find("span").css("color", "");
+    }
+    else {
+        row.find("td").css("background-color", "");
+        our_cell.css("color", diff > 0 ? "#FF0000" : "#0000FF");
+        their_cell.css("color", diff > 0 ? "#0000FF" : "#FF0000");
+    }
+}
+
 function hook_shared() {
     var our_profile = $("#nav a:first").attr("href"), our_pos;
     var profile_links = $("#content h2:first").find("a").slice(1);
@@ -455,6 +471,7 @@ function hook_shared() {
                 diff_sum += diff;
                 diff_cell.text(round_score(diff));
                 diff_nums++;
+                update_shared_row_colors($(row), our_pos);
             }
         });
 
@@ -466,8 +483,10 @@ function hook_shared() {
         });
 
         mean_score = round_score(score_sum / score_nums);
-        if (!isNaN(mean_score))
+        if (!isNaN(mean_score)) {
             $(shared_means.find("td")[our_pos]).find("span").text(mean_score);
+            update_shared_row_colors(shared_means, our_pos);
+        }
 
         mean_diff = Math.round(diff_sum / diff_nums * 100) / 100;
         if (!isNaN(mean_diff))
