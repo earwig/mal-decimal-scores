@@ -570,7 +570,7 @@ function hook_export() {
         $("#dialog td")
             .append($("<hr>")
                 .css("border", "none")
-                .css("background-color", "#AAA")
+                .css("background-color", "#bebebe")
                 .css("height", "1px"))
             .append($("<p>")
                 .html("The regular list export above will only include " +
@@ -592,7 +592,7 @@ function hook_export() {
 function hook_import() {
     $("#content").append($("<hr>")
             .css("border", "none")
-            .css("background-color", "#AAA")
+            .css("background-color", "#bebebe")
             .css("height", "1px"))
         .append($("<p>")
             .html("You can also import decimal scores here. Doing so will " +
