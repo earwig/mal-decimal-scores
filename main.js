@@ -1,3 +1,10 @@
+/* Decimal Scores for MyAnimeList
+   Copyright (C) 2014 Ben Kurtovic <ben.kurtovic@gmail.com>
+
+   Distributed under the terms of the MIT License. See the LICENSE file for
+   details.
+*/
+
 /* -------------------------------- Globals -------------------------------- */
 
 var MAX_BUCKETS = 256;
