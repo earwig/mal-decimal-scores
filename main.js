@@ -7,23 +7,31 @@ var should_sort = window.location.href.indexOf("order=4") != -1;
 
 /* ------------------------ Miscellaneous functions ------------------------ */
 
+String.prototype.cut_after = function(substr) {
+    return this.substr(this.indexOf(substr) + substr.length)
+};
+
+String.prototype.cut_before = function(substr) {
+    return this.substr(0, this.indexOf(substr));
+};
+
 function get_anime_id_from_href(href) {
     var anime_id;
     if (href.indexOf("/anime/") != -1)
-        anime_id = href.substr(href.indexOf("/anime/") + "/anime/".length);
+        anime_id = href.cut_after("/anime/");
     else
-        anime_id = href.substr(href.indexOf("id=") + "id=".length);
+        anime_id = href.cut_after("id=");
     if (anime_id.indexOf("/") != -1)
-        anime_id = anime_id.substr(0, anime_id.indexOf("/"));
+        anime_id = anime_id.cut_before("/");
     if (anime_id.indexOf("&") != -1)
-        anime_id = anime_id.substr(0, anime_id.indexOf("&"));
+        anime_id = anime_id.cut_before("&");
     return anime_id;
 }
 
 function get_edit_id_from_href(href) {
-    var anime_id = href.substr(href.indexOf("id=") + "id=".length);
+    var anime_id = href.cut_after("id=");
     if (anime_id.indexOf("&") != -1)
-        anime_id = anime_id.substr(0, anime_id.indexOf("&"));
+        anime_id = anime_id.cut_before("&");
     return anime_id;
 }
 
@@ -101,6 +109,7 @@ function update_list_score(anime_id) {
         $("#scorebutton" + anime_id).prop("disabled", false);
         if (should_sort)
             sort_list();
+        update_list_stats();
     });
     save_score(anime_id, new_score);
 }
@@ -165,7 +174,7 @@ function submit_edit_form(anime_id, submit_type, submit_button) {
     submit_button[0].click();
 }
 
-/* -------------------------------- Sorting -------------------------------- */
+/* ------------------------ List stats and sorting ------------------------- */
 
 function compare(row1, row2) {
     var r1 = $(row1).find("span[id^='scoreval']").text(),
@@ -182,7 +191,7 @@ function compare(row1, row2) {
     return r2 - r1;
 }
 
-function setup_sortable_list() {
+function prepare_list() {
     var headers = [".header_cw", ".header_completed", ".header_onhold",
                    ".header_dropped", ".header_ptw"];
     $.each(headers, function(i, header) {
@@ -210,6 +219,46 @@ function sort_list() {
     });
 }
 
+function apply_stats(elem, old_sum, new_sum, nums) {
+    var old_score = elem.text().cut_after("Score: ").cut_before(",");
+    var old_dev = elem.text().cut_after("Dev.: ").cut_before("\n");
+    var mean, deviation;
+
+    mean = Math.round(new_sum / nums * 10) / 10 || 0;
+    if (mean == Math.round(mean))
+        mean += ".0";
+    deviation = (new_sum - old_sum) / nums + parseFloat(old_dev) || 0;
+    deviation = Math.round(deviation * 100) / 100;
+
+    elem.text(elem.text()
+        .replace("Score: " + old_score, "Score: " + mean)
+        .replace("Dev.: " + old_dev, "Dev.: " + deviation));
+}
+
+function update_list_stats() {
+    var old_sum_all = 0, new_sum_all = 0, nums_all = 0;
+
+    $(".category_totals").each(function(i, totals) {
+        var group = $(totals).closest("table").prev();
+        var old_sum = 0, new_sum = 0, nums = 0;
+
+        group.find("span[id^='scoreval']").each(function(j, elem) {
+            if ($(elem).text() != "-") {
+                old_sum += parseFloat($(elem).next().text());
+                new_sum += parseFloat($(elem).text());
+                nums++;
+            }
+        });
+        apply_stats($(totals), old_sum, new_sum, nums);
+        old_sum_all += old_sum;
+        new_sum_all += new_sum;
+        nums_all += nums;
+    });
+
+    if ($("#grand_totals").length > 0)
+        apply_stats($("#grand_totals"), old_sum_all, new_sum_all, nums_all);
+}
+
 /* ---------------------------- Extension hooks ---------------------------- */
 
 function hook_list() {
@@ -218,6 +267,9 @@ function hook_list() {
             var anime_id = elem.id.split("scoreval")[1];
             var bucket_id = (parseInt(anime_id) % MAX_BUCKETS).toString();
             var bucket = data[bucket_id];
+
+            $(elem).after($("<span>")
+                .css("display", "none").text($(elem).text()));
 
             if (bucket !== undefined && bucket[anime_id] !== undefined)
                 $(elem).text(bucket[anime_id] == 0 ? "-" : bucket[anime_id]);
@@ -253,10 +305,10 @@ function hook_list() {
                 .remove();
         });
 
-        if (should_sort) {
-            setup_sortable_list();
+        prepare_list();
+        if (should_sort)
             sort_list();
-        }
+        update_list_stats();
     });
 }
 
@@ -357,7 +409,7 @@ function hook_addtolist() {
     /* TODO: this entry point is unimplemented - it's rarely used and difficult
        to inject into, so I'm avoiding it for now. */
     $("<p><b>Note:</b> For the time being, anime added through this " +
-      "interface cannot be given scores on the 100-point scale (the old " +
+      "interface cannot be given scores on the 10.0-point scale (the old " +
       "10-point system is used).</p><p>To give a more specific number, " +
       "simply add the anime here, then go to its own page or to your list " +
       "page, and update the score.</p>").insertAfter($("#stype").parent());
