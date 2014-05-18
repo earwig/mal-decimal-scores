@@ -8,7 +8,7 @@ var should_sort = window.location.href.indexOf("order=4") != -1;
 /* ------------------------ Miscellaneous functions ------------------------ */
 
 /* Note: complaints about modifying objects we don't own are ignored since
-   these changes are only executed within the context of a Chrome extension. */
+   these changes are only executed within the context of our own extension. */
 
 String.prototype.contains = function(substr) {
     return this.indexOf(substr) != -1;
@@ -21,6 +21,15 @@ String.prototype.cut_after = function(substr) {
 String.prototype.cut_before = function(substr) {
     return this.substr(0, this.indexOf(substr));
 };
+
+function round_score(num) {
+    num = Math.round(num * 10) / 10;
+    if (isNaN(num))
+        return num;
+    if (num == Math.round(num))
+        num += ".0";
+    return num;
+}
 
 function get_anime_id_from_href(href) {
     var anime_id;
@@ -43,14 +52,23 @@ function get_edit_id_from_href(href) {
 }
 
 function get_score_from_element(elem) {
-    var score = Math.round(elem.val() * 10) / 10;
+    var score = round_score(elem.val());
     if (isNaN(score) || ((score < 1 || score > 10) && score != 0)) {
         alert("Invalid score: must be a number between 1.0 and 10.0, or 0.");
         return null;
     }
-    if (score == Math.round(score))
-        score += ".0"
     return score;
+}
+
+function load_score_into_element(data, anime_id, elem) {
+    var bucket = data[(parseInt(anime_id) % MAX_BUCKETS).toString()];
+    if (bucket !== undefined && bucket[anime_id] !== undefined)
+        elem.text(bucket[anime_id] == 0 ? "-" : bucket[anime_id]);
+    else {
+        var current = parseInt(elem.text());
+        if (!isNaN(current))
+            elem.text(current + ".0");
+    }
 }
 
 /* --------------------------- Storage functions --------------------------- */
@@ -229,12 +247,8 @@ function sort_list() {
 function apply_stats(elem, old_sum, new_sum, nums) {
     var old_score = elem.text().cut_after("Score: ").cut_before(",");
     var old_dev = elem.text().cut_after("Dev.: ").cut_before("\n");
-    var mean, deviation;
-
-    mean = Math.round(new_sum / nums * 10) / 10 || 0;
-    if (mean == Math.round(mean))
-        mean += ".0";
-    deviation = (new_sum - old_sum) / nums + parseFloat(old_dev) || 0;
+    var mean = round_score(new_sum / nums) || "0.0";
+    var deviation = (new_sum - old_sum) / nums + parseFloat(old_dev) || 0;
     deviation = Math.round(deviation * 100) / 100;
 
     elem.text(elem.text()
@@ -272,19 +286,11 @@ function hook_list() {
     retrieve_scores(null, function(data) {
         $("span[id^='scoreval']").each(function(i, elem) {
             var anime_id = elem.id.split("scoreval")[1];
-            var bucket_id = (parseInt(anime_id) % MAX_BUCKETS).toString();
-            var bucket = data[bucket_id];
 
             $(elem).after($("<span>")
                 .css("display", "none").text($(elem).text()));
 
-            if (bucket !== undefined && bucket[anime_id] !== undefined)
-                $(elem).text(bucket[anime_id] == 0 ? "-" : bucket[anime_id]);
-            else {
-                var current = parseInt($(elem).text());
-                if (!isNaN(current))
-                    $(elem).text(current + ".0");
-            }
+            load_score_into_element(data, anime_id, $(elem));
 
             $("#scorediv" + anime_id)
                 .after($("<div>")
@@ -413,6 +419,55 @@ function hook_edit(anime_id) {
 }
 
 function hook_shared() {
+    var our_profile = $("#nav a:first").attr("href"), our_pos;
+    var profile_links = $("#content h2:first").find("a").slice(1);
+    var shared_table = $("#content h2:first").next(), unique_table;
+    var shared_means = shared_table.find("tr:nth-last-child(2)");
+    var mean_score, mean_diff;
+
+    if ($(profile_links[0]).attr("href") == our_profile)
+        our_pos = 1;
+    else if ($(profile_links[1]).attr("href") == our_profile)
+        our_pos = 2;
+    else
+        return;
+
+    retrieve_scores(null, function(data) {
+        var score_sum = 0, diff_sum = 0, score_nums = 0, diff_nums = 0;
+
+        shared_table.find("tr").slice(1, -2).each(function(i, row) {
+            var anime_id = $(row).find("a").attr("href")
+                            .cut_after("/anime/").cut_before("/");
+            var our_cell = $($(row).find("td")[our_pos]).find("span");
+            var their_cell = $($(row).find("td")[our_pos == 1 ? 2 : 1]);
+            var diff_cell = $($(row).find("td")[3]);
+
+            load_score_into_element(data, anime_id, our_cell);
+            if (our_cell.text() != "-") {
+                score_sum += parseFloat(our_cell.text());
+                score_nums++;
+            }
+            if (our_cell.text() != "-" && their_cell.text() != "-") {
+                var diff = Math.abs(our_cell.text() - their_cell.text());
+                diff_sum += diff;
+                diff_cell.text(round_score(diff));
+                diff_nums++;
+            }
+        });
+
+        unique_table = $($("#content h2")[our_pos]).next();
+        unique_table.find("tr").slice(1, -1).each(function(i, row) {
+            var anime_id = $(row).find("a").attr("href")
+                            .cut_after("/anime/").cut_before("/");
+            var cell = $(row).find("td:nth(1)").find("span");
+            load_score_into_element(data, anime_id, cell);
+        });
+
+        mean_score = round_score(score_sum / score_nums);
+        mean_diff = Math.round(diff_sum / diff_nums * 100) / 100;
+        $(shared_means.find("td")[our_pos]).find("span").text(mean_score);
+        $(shared_means.find("td")[3]).text(mean_diff);
+    });
 }
 
 function hook_addtolist() {
