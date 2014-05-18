@@ -304,6 +304,13 @@ function prepare_list() {
         $(row).add($(row).next())
             .wrapAll('<div class="list-chart-row"/>');
     });
+
+    $(".category_totals, #grand_totals").each(function(i, totals) {
+        var text = $(totals).text();
+        $(totals).empty()
+            .append($("<span>").text(text))
+            .append($("<span>").hide().text(text.cut("Score Dev.: ", "\n")));
+    });
 }
 
 function sort_list() {
@@ -320,15 +327,14 @@ function sort_list() {
 }
 
 function apply_stats(elem, old_sum, new_sum, nums) {
-    var old_score = elem.text().cut("Mean Score: ", ",");
-    var old_dev = elem.text().cut("Score Dev.: ", "\n");
+    var text = elem.find(":first").text();
     var mean = round_score(new_sum / nums) || "0.0";
-    var deviation = (new_sum - old_sum) / nums + parseFloat(old_dev) || 0;
-    deviation = Math.round(deviation * 100) / 100;
+    var dev = parseFloat(elem.find(":first").next().text());
+    dev = Math.round(((new_sum - old_sum) / nums + dev || 0) * 100) / 100;
 
-    elem.text(elem.text()
-        .replace("Mean Score: " + old_score, "Mean Score: " + mean)
-        .replace("Score Dev.: " + old_dev, "Score Dev.: " + deviation));
+    elem.find(":first").text(text
+        .replace("Score: " + text.cut("Score: ", ","), "Score: " + mean)
+        .replace("Dev.: " + text.cut("Dev.: ", "\n"), "Dev.: " + dev));
 }
 
 function update_list_stats() {
