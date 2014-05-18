@@ -566,7 +566,7 @@ function hook_addtolist() {
 function hook_export() {
     chrome.storage.sync.getBytesInUse(null, function(usage) {
         usage = Math.round(usage / 1024 * 10) / 10;
-        usage += " kB / " + chrome.storage.sync.QUOTA_BYTES / 1024 + " kB";
+        usage += " KB / " + chrome.storage.sync.QUOTA_BYTES / 1024 + " KB";
         $("#dialog td")
             .append($("<hr>")
                 .css("border", "none")
