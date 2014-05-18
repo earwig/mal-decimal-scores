@@ -75,6 +75,22 @@ function load_score_into_element(data, anime_id, elem) {
     }
 }
 
+function update_shared_row_colors(row, our_pos) {
+    var our_cell = $(row.find("td")[our_pos]);
+    var their_cell = $(row.find("td")[our_pos == 1 ? 2 : 1]);
+    var diff = our_cell.text() - their_cell.text();
+
+    if (!diff) {
+        row.find("td").css("background-color", "#f6f6f6");
+        our_cell.add(their_cell).find("span").css("color", "");
+    }
+    else {
+        row.find("td").css("background-color", "");
+        our_cell.css("color", diff > 0 ? "#FF0000" : "#0000FF");
+        their_cell.css("color", diff > 0 ? "#0000FF" : "#FF0000");
+    }
+}
+
 /* --------------------------- Storage functions --------------------------- */
 
 function save_score(anime_id, score) {
@@ -420,22 +436,6 @@ function hook_edit(anime_id) {
                     }(anime_id, old_delete)))
             .hide();
     });
-}
-
-function update_shared_row_colors(row, our_pos) {
-    var our_cell = $(row.find("td")[our_pos]);
-    var their_cell = $(row.find("td")[our_pos == 1 ? 2 : 1]);
-    var diff = our_cell.text() - their_cell.text();
-
-    if (!diff) {
-        row.find("td").css("background-color", "#f6f6f6");
-        our_cell.add(their_cell).find("span").css("color", "");
-    }
-    else {
-        row.find("td").css("background-color", "");
-        our_cell.css("color", diff > 0 ? "#FF0000" : "#0000FF");
-        their_cell.css("color", diff > 0 ? "#0000FF" : "#FF0000");
-    }
 }
 
 function hook_shared() {
