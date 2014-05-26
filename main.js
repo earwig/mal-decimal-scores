@@ -251,7 +251,7 @@ function submit_edit_form(anime_id, submit_type, submit_button) {
 
 /* ------------------------ List stats and sorting ------------------------- */
 
-function compare(row1, row2) {
+function compare_scores(row1, row2) {
     var r1 = $(row1).find("span[id^='scoreval']").text(),
         r2 = $(row2).find("span[id^='scoreval']").text();
     if (r1 == r2) {
@@ -264,6 +264,27 @@ function compare(row1, row2) {
     if (r2 == "-")
         return -1;
     return r2 - r1;
+}
+
+function extract_progress(td) {
+    var text = td.text();
+    if (text.contains("/"))
+        return [text.substr(0, text.indexOf("/")), text.cut("/", " ")];
+    else
+        return [text, text];
+}
+
+function compare_progress(row1, row2) {
+    var header = $(row1).parent().prev();
+    var column = header.find("td")
+        .index(header.find("a:contains('Progress')").closest("td"));
+
+    var r1 = extract_progress($($(row1).find("td")[column])),
+        r2 = extract_progress($($(row2).find("td")[column]));
+
+    if (r1[0] == r2[0])
+        return r2[1] - r1[1];
+    return (r2[0] == "-" ? 0 : r2[0]) - (r1[0] == "-" ? 0 : r1[0]);
 }
 
 function prepare_list() {
@@ -289,11 +310,18 @@ function prepare_list() {
 }
 
 function sort_list() {
-    if (window.location.href.indexOf("order=4") == -1)
-        return;
+    var order = parseInt(window.location.href.cut("order=", "&")), cmp_func;
+    switch (order) {
+        case 4:
+            cmp_func = compare_scores;   break;
+        case 12:
+            cmp_func = compare_progress; break;
+        default:
+            return;
+    }
 
     $(".list-chart-group").each(function(i, group) {
-        $(group).find(".list-chart-row").sort(compare).each(function(i, row) {
+        $(group).find(".list-chart-row").sort(cmp_func).each(function(i, row) {
             $(group).append(row);
         });
 
