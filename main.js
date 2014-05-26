@@ -10,8 +10,6 @@
 var MAX_BUCKETS = 256;
 var LOADING_IMG = '<img src="http://cdn.myanimelist.net/images/xmlhttp-loader.gif" align="center">';
 
-var should_sort = window.location.href.indexOf("order=4") != -1;
-
 /* ------------------------ Miscellaneous functions ------------------------ */
 
 /* Note: complaints about modifying objects we don't own are ignored since
@@ -21,17 +19,15 @@ String.prototype.contains = function(substr) {
     return this.indexOf(substr) != -1;
 };
 
-String.prototype.cut_after = function(substr) {
-    return this.substr(this.indexOf(substr) + substr.length)
-};
-
-String.prototype.cut_before = function(substr) {
-    return this.substr(0, this.indexOf(substr));
-};
-
 String.prototype.cut = function(after, before) {
-    return this.cut_after(after).cut_before(before);
-}
+    var str = this;
+    if (str.contains(after)) {
+        str = str.substr(str.indexOf(after) + after.length);
+        if (str.contains(before))
+            str = str.substr(0, str.indexOf(before));
+    }
+    return str;
+};
 
 function round_score(num) {
     num = Math.round(num * 10) / 10;
@@ -40,26 +36,6 @@ function round_score(num) {
     if (num == Math.round(num))
         num += ".0";
     return num;
-}
-
-function get_anime_id_from_href(href) {
-    var anime_id;
-    if (href.contains("/anime/"))
-        anime_id = href.cut_after("/anime/");
-    else
-        anime_id = href.cut_after("id=");
-    if (anime_id.contains("/"))
-        anime_id = anime_id.cut_before("/");
-    if (anime_id.contains("&"))
-        anime_id = anime_id.cut_before("&");
-    return anime_id;
-}
-
-function get_edit_id_from_href(href) {
-    var anime_id = href.cut_after("id=");
-    if (anime_id.contains("&"))
-        anime_id = anime_id.cut_before("&");
-    return anime_id;
 }
 
 function get_score_from_element(elem) {
@@ -207,8 +183,7 @@ function update_list_score(anime_id) {
         $("#scoretext" + anime_id).val("");
         $("#scorediv" + anime_id).css("display", "none");
         $("#scorebutton" + anime_id).prop("disabled", false);
-        if (should_sort)
-            sort_list();
+        sort_list();
         update_list_stats();
     });
     save_score(anime_id, new_score);
@@ -314,6 +289,9 @@ function prepare_list() {
 }
 
 function sort_list() {
+    if (window.location.href.indexOf("order=4") == -1)
+        return;
+
     $(".list-chart-group").each(function(i, group) {
         $(group).find(".list-chart-row").sort(compare).each(function(i, row) {
             $(group).append(row);
@@ -398,8 +376,7 @@ function hook_list() {
         });
 
         prepare_list();
-        if (should_sort)
-            sort_list();
+        sort_list();
         update_list_stats();
     });
 }
@@ -648,11 +625,11 @@ $(document).ready(function() {
     }
     else if ($("#malLogin").length == 0) {
         if (href.contains("/anime/") || href.contains("/anime.php"))
-            hook_anime(get_anime_id_from_href(href));
+            hook_anime(href.cut("/anime/", "/").cut("id=", "&"));
         else if (href.contains("/panel.php") && href.contains("go=add"))
             hook_add();
         else if (href.contains("/editlist.php") && href.contains("type=anime"))
-            hook_edit(get_edit_id_from_href(href));
+            hook_edit(href.cut("id=", "&"));
         else if (href.contains("/shared.php") && !href.contains("type=manga"))
             hook_shared();
         else if (href.contains("/addtolist.php"))
